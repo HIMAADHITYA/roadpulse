@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0b3d66" />
+<title>RoadPulse — Road Damage Management Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{
+  --navy:#0b3d66;--navy-d:#082a47;--blue:#1665c1;
+  --bg:#eef2f7;--bg2:#e3e9f1;--surface:#fff;--surface2:#f8fafc;--line:#d7dde5;--line2:#e8edf3;
+  --text:#16222e;--soft:#2c3e50;--muted:#64748b;
+  --green:#15803d;--green-l:#dcfce7;--amber:#b45309;--amber-l:#fef3c7;
+  --orange:#c2410c;--orange-l:#ffedd5;--red:#b91c1c;--red-l:#fee2e2;--purple:#6d28d9;--purple-l:#ede9fe;
+  --r:12px;--rs:8px;--sh:0 1px 3px rgba(15,23,42,.08),0 4px 12px rgba(15,23,42,.05);
+  --top:56px;--tab:60px;
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+.hidden{display:none!important}
+.topbar{position:sticky;top:0;z-index:1200;background:var(--navy);color:#fff;height:calc(var(--top) + env(safe-area-inset-top,0px));padding-top:env(safe-area-inset-top,0px)}
+.topbar-in{height:var(--top);max-width:1600px;margin:0 auto;padding:0 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.mark{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#c9a227,#e6c458);color:var(--navy-d);display:grid;place-items:center;font-weight:800;font-size:13px;flex:none}
+.brand b{display:block;font-size:15px;line-height:1.1}.brand small{opacity:.7;font-size:11px}
+.top-r{display:flex;align-items:center;gap:8px}
+.chip-t{background:rgba(255,255,255,.14);padding:5px 10px;border-radius:7px;font-size:12px;font-weight:600;white-space:nowrap}
+.ib{width:36px;height:36px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;display:grid;place-items:center;cursor:pointer}
+.ib:hover{background:rgba(255,255,255,.2)}.ib svg{width:18px;height:18px}
+.login{min-height:calc(100dvh - var(--top));display:none;place-items:center;padding:24px 16px}
+.login.on{display:grid}
+.lcard{width:min(420px,100%);background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:32px 28px;box-shadow:0 12px 32px rgba(15,23,42,.12);border-top:4px solid var(--navy)}
+.lcard h2{margin:0 0 4px;font-size:22px;font-weight:800;letter-spacing:-.02em}
+.sub{color:var(--muted);font-size:13.5px;margin:0 0 22px}
+.field{margin-bottom:14px}.field label{display:block;font-size:12px;font-weight:700;color:var(--soft);margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;padding:11px 12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--rs);font-size:16px;outline:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(22,101,193,.18)}
+.field textarea{min-height:72px;resize:vertical}
+.err{color:var(--red);font-size:13px;min-height:18px;margin-top:10px;font-weight:500}
+.hint{margin-top:18px;padding-top:16px;border-top:1px solid var(--line2);font-size:12px;color:var(--muted);line-height:2}
+.hint code{background:var(--bg2);border:1px solid var(--line);padding:2px 7px;border-radius:5px;font-weight:700;font-size:11.5px;color:var(--text)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 14px;border-radius:var(--rs);border:1px solid var(--line);background:var(--surface);font-weight:600;font-size:13px;cursor:pointer;min-height:38px}
+.btn:hover{background:var(--bg2)}.btn:active{transform:scale(.98)}
+.btn.p{background:var(--navy);border-color:var(--navy);color:#fff}.btn.p:hover{background:var(--navy-d)}
+.btn.w{width:100%;min-height:46px;font-size:15px}.btn.s{padding:6px 11px;font-size:12px;min-height:32px}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.shell{max-width:1600px;margin:0 auto;padding:18px 20px 32px}
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.head h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.02em}
+.head p{margin:2px 0 0;color:var(--muted);font-size:13px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;display:flex;flex-direction:column;min-height:0}
+.ch{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line2);background:var(--surface2)}
+.ch h2{margin:0;font-size:14px;font-weight:700}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--line);padding:3px 10px;border-radius:99px;font-size:11.5px;font-weight:600;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;background:#94a3b8;flex:none}
+.dot.live{background:var(--green);box-shadow:0 0 0 3px rgba(21,128,61,.25)}.dot.stale{background:var(--amber)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+.stat{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:var(--r);padding:12px 16px;box-shadow:var(--sh)}
+.stat.c{border-left-color:var(--red)}.stat.h{border-left-color:var(--orange)}.stat.g{border-left-color:var(--green)}
+.stat .l{font-size:11.5px;font-weight:600;color:var(--muted)}
+.stat .v{font-size:26px;font-weight:800;letter-spacing:-.03em;line-height:1.15}
+.stat .t{font-size:12px;color:var(--muted)}
+.main{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(360px,1fr);gap:14px;align-items:start}
+.col-l{display:grid;gap:14px;min-width:0}
+.map-wrap{position:relative;isolation:isolate;height:clamp(380px,58vh,640px)}
+#map{position:absolute;inset:0;background:var(--bg2)}
+.map-btns{position:absolute;right:10px;bottom:10px;z-index:500;display:flex;flex-direction:column;gap:6px}
+.map-btns .btn{box-shadow:var(--sh)}
+.queue{position:sticky;top:calc(var(--top) + 12px);max-height:calc(100dvh - var(--top) - 24px)}
+.filters{display:flex;gap:6px;padding:10px 12px;border-bottom:1px solid var(--line2);overflow-x:auto;scrollbar-width:none}
+.filters::-webkit-scrollbar{display:none}
+.fb{border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:6px 13px;border-radius:99px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex:none}
+.fb.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.events{display:grid;gap:10px;padding:12px;overflow-y:auto;overscroll-behavior:contain;flex:1}
+.live{display:grid;grid-template-columns:1.4fr 1fr;gap:12px;padding:12px}
+.liveimg{position:relative;aspect-ratio:16/9;background:#000;border-radius:var(--rs);overflow:hidden}
+.liveimg img{width:100%;height:100%;object-fit:contain}
+.ov{position:absolute;left:0;right:0;padding:8px 10px;display:flex;justify-content:space-between;gap:8px;color:#fff;font-size:11.5px}
+.ov.t{top:0;background:linear-gradient(#000a,transparent)}.ov.b{bottom:0;background:linear-gradient(transparent,#000b)}
+.badge{display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,.5);padding:3px 9px;border-radius:99px;font-weight:600;font-size:11px}
+.sens{display:grid;gap:8px;align-content:start}
+.sc{background:var(--surface2);border:1px solid var(--line2);border-left:3px solid var(--blue);border-radius:var(--rs);padding:9px 12px}
+.sc.pu{border-left-color:var(--purple)}.sc.red{border-left-color:var(--red)}.sc.orange{border-left-color:var(--orange)}.sc.amber{border-left-color:var(--amber)}.sc.green{border-left-color:var(--green)}
+.sc .l{font-size:11px;font-weight:600;color:var(--muted)}.sc .v{font-size:18px;font-weight:800;line-height:1.2}.sc .s{font-size:11.5px;color:var(--muted)}
+.event{border:1px solid var(--line);border-radius:var(--rs);background:var(--surface);overflow:hidden;transition:border-color .15s,box-shadow .15s}
+.event.sel{border-color:var(--blue);box-shadow:0 0 0 2px rgba(22,101,193,.25)}
+.media{display:flex;gap:8px;padding:8px;background:var(--surface2);border-bottom:1px solid var(--line2);overflow-x:auto;scrollbar-width:none}
+.media img{height:84px;border-radius:6px;object-fit:cover;cursor:pointer;border:1px solid var(--line);flex:none}
+.media .crop{width:84px}.media .full{width:120px}
+.eb{padding:10px 14px 12px}
+.pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.pill{padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;border:1px solid transparent}
+.sev-CRITICAL{color:var(--red);background:var(--red-l)}.sev-HIGH{color:var(--orange);background:var(--orange-l)}
+.sev-MODERATE{color:var(--amber);background:var(--amber-l)}.sev-LOW{color:var(--green);background:var(--green-l)}
+.pill.dup{color:var(--purple);background:var(--purple-l)}.pill.cost{color:var(--green);background:var(--green-l)}.pill.st{color:var(--muted);background:var(--bg2);border-color:var(--line)}
+.meta{display:grid;grid-template-columns:1fr 1fr;gap:3px 14px;color:var(--muted);font-size:12.5px}
+.meta b{color:var(--soft);font-weight:600}
+.acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--line2)}
+.empty{padding:36px 16px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:var(--rs)}
+.tabbar{display:none}
+@media(max-width:1000px){.main{grid-template-columns:1fr}.queue{position:static;max-height:none}.events{overflow:visible}}
+@media(max-width:760px){.shell{padding:12px 12px calc(var(--tab) + var(--safe-b) + 20px)}.head h1{font-size:19px}.tabbar{display:grid;grid-template-columns:repeat(3,1fr);position:fixed;left:0;right:0;bottom:0;z-index:1100;background:var(--surface);border-top:1px solid var(--line);padding-bottom:var(--safe-b);height:calc(var(--tab) + var(--safe-b))}.tabbar button{border:0;background:none;color:var(--muted);font-size:11px;font-weight:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer}.tabbar button.on{color:var(--blue)}.tabbar svg{width:22px;height:22px}[data-panel]{display:none}body[data-tab="overview"] [data-panel~="overview"],body[data-tab="map"] [data-panel~="map"],body[data-tab="reports"] [data-panel~="reports"]{display:flex;flex-direction:column}body[data-tab="overview"] .stats[data-panel~="overview"]{display:grid}body[data-tab="overview"] .col-l{display:block}.map-wrap{height:calc(100dvh - var(--top) - var(--tab) - var(--safe-b) - 150px);min-height:320px}.col-l,.main{display:block}.col-l>*{margin-bottom:12px}}
+.fab{position:fixed;right:18px;bottom:calc(24px + var(--safe-b));z-index:1000;width:56px;height:56px;border-radius:50%;border:0;background:var(--navy);color:#fff;font-size:28px;display:none;place-items:center;cursor:pointer;box-shadow:0 6px 20px rgba(11,61,102,.45)}
+.fab.on{display:grid}@media(max-width:760px){.fab{bottom:calc(var(--tab) + var(--safe-b) + 14px)}}
+.backdrop{position:fixed;inset:0;background:rgba(8,42,71,.55);display:none;place-items:center;z-index:2000;padding:16px;backdrop-filter:blur(3px)}
+.backdrop.on{display:grid}.modal{width:min(500px,100%);background:var(--surface);border-radius:16px;padding:22px;max-height:calc(100dvh - 32px);overflow-y:auto;box-shadow:0 12px 32px rgba(0,0,0,.25)}
+.modal h2{margin:0 0 4px;font-size:18px;font-weight:800}.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;padding-top:14px;border-top:1px solid var(--line2)}
+@media(max-width:560px){.backdrop{padding:0;align-items:end}.modal{border-radius:16px 16px 0 0;width:100%;max-height:92dvh}.actions .btn{flex:1;min-height:44px}}
+.toasts{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(24px + var(--safe-b));z-index:3000;display:grid;gap:8px;pointer-events:none}@media(max-width:760px){.toasts{bottom:calc(var(--tab) + var(--safe-b) + 16px)}}
+.toast{background:var(--navy);color:#fff;padding:11px 16px;border-radius:10px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:min(90vw,400px);text-align:center}.toast.success{background:var(--green)}.toast.error{background:var(--red)}.toast.warn{background:var(--amber)}
+.leaflet-container{font-family:inherit}.leaflet-popup-content{margin:12px 14px}
+</style>
+</head>
+<body data-tab="overview">
+<header class="topbar"><div class="topbar-in">
+  <div class="brand"><div class="mark">RP</div><div><b>RoadPulse</b><small>Road Damage Management</small></div></div>
+  <div class="top-r hidden" id="top-r">
+    <span class="chip-t cnt"><b id="count">0</b> detections</span>
+    <span class="chip-t" id="role-chip">role</span>
+    <button class="ib" id="logout-btn" title="Sign out" aria-label="Sign out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
+  </div>
+</div></header>
+<div class="login on" id="login-view"><div class="lcard">
+  <h2>Sign in to portal</h2>
+  <p class="sub">Access for officials, contractors, and citizens.</p>
+  <div class="field"><label for="login-user">Username</label><input id="login-user" autocomplete="username" autocapitalize="none" placeholder="Enter username"></div>
+  <div class="field"><label for="login-pass">Password</label><input id="login-pass" type="password" autocomplete="current-password" placeholder="Enter password"></div>
+  <div class="field"><label for="login-role">Sign in as</label>
+    <select id="login-role"><option value="admin">Administrator</option><option value="public">Citizen</option><option value="contractor">Contractor</option></select></div>
+  <button class="btn p w" id="login-submit">Sign in</button>
+  <div class="err" id="login-err" role="alert"></div>
+  <div class="hint"><b>Demo credentials</b><br><code>admin / admin123</code> Administrator<br><code>public / public123</code> Citizen<br><code>contractor / contract123</code> Contractor</div>
+</div></div>
+<div class="shell hidden" id="dashboard-view">
+  <div class="head"><div><h1 id="page-title">Dashboard</h1><p id="page-sub"></p></div></div>
+  <section class="stats" data-panel="overview">
+    <div class="stat"><div class="l">Total detections</div><div class="v" id="stat-total">0</div><div class="t">All-time records</div></div>
+    <div class="stat c"><div class="l">Critical</div><div class="v" id="stat-critical">0</div><div class="t">Needs immediate action</div></div>
+    <div class="stat h"><div class="l">Average severity</div><div class="v" id="stat-severity">0</div><div class="t">Weighted repair score</div></div>
+    <div class="stat g"><div class="l">Open repairs</div><div class="v" id="stat-open">0</div><div class="t">Est. cost <b id="stat-cost">₹0</b></div></div>
+  </section>
+  <div class="main">
+    <div class="col-l">
+      <section class="card" data-panel="overview">
+        <div class="ch"><h2>Live edge feed</h2><span class="chip"><span class="dot" id="live-dot"></span><span id="live-status">offline</span></span></div>
+        <div class="live">
+          <div class="liveimg">
+            <img id="live-img" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="Live camera feed">
+            <div class="ov t"><span class="badge"><span class="dot" id="live-badge-dot"></span><span id="live-badge-text">LIVE</span></span><span class="badge" id="live-device-badge">device</span></div>
+            <div class="ov b"><span>Updated <b id="live-updated">—</b></span><span>FPS <b id="live-fps">0.0</b></span></div>
+          </div>
+          <div class="sens">
+            <div class="sc"><div class="l">Ultrasonic distance</div><div class="v" id="live-depth">0.0 cm</div><div class="s">HC-SR04 reading</div></div>
+            <div class="sc pu"><div class="l">Acceleration (g)</div><div class="v" id="live-accel">0.00 · 0.00 · 0.00</div><div class="s">X · Y · Z (MPU6050)</div></div>
+            <div class="sc" id="live-top-card"><div class="l">Top detection</div><div class="v" id="live-top">—</div><div class="s" id="live-top-sub">No detections in frame</div></div>
+          </div>
+        </div>
+      </section>
+      <section class="card" data-panel="map">
+        <div class="ch"><h2>Road damage map</h2><span class="chip" id="map-count">0 markers</span></div>
+        <div class="map-wrap">
+          <div id="map"></div>
+          <div class="map-btns">
+            <button class="btn s" id="map-fit" title="Show all markers">Fit all</button>
+            <button class="btn s" id="map-me" title="Go to my location">My location</button>
+          </div>
+        </div>
+      </section>
+    </div>
+    <section class="card queue" data-panel="reports">
+      <div class="ch"><h2 id="queue-title">Detection queue</h2><span class="chip" id="queue-label">—</span></div>
+      <div class="filters" id="filters">
+        <button class="fb on" data-filter="all">All</button>
+        <button class="fb" data-filter="CRITICAL">Critical</button>
+        <button class="fb" data-filter="HIGH">High</button>
+        <button class="fb" data-filter="MODERATE">Moderate</button>
+        <button class="fb" data-filter="LOW">Low</button>
+      </div>
+      <div id="events" class="events"></div>
+    </section>
+  </div>
+</div>
+<nav class="tabbar hidden" id="tabbar" aria-label="Sections">
+  <button data-tab="overview" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Overview</button>
+  <button data-tab="map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Map</button>
+  <button data-tab="reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Reports</button>
+</nav>
+<button class="fab" id="report-fab" title="Report a pothole" aria-label="Report a pothole">+</button>
+<div class="backdrop" id="report-modal"><div class="modal">
+  <h2>File a road damage complaint</h2>
+  <p class="sub">Add a photo and we'll register it with your GPS location.</p>
+  <div class="field"><label for="rep-photo">Photograph</label><input id="rep-photo" type="file" accept="image/*" capture="environment"></div>
+  <div class="field"><div id="rep-preview" style="min-height:110px;border:1px dashed var(--line);border-radius:8px;display:grid;place-items:center;color:var(--muted);font-size:13px;background:var(--surface2)">No photo yet</div></div>
+  <div class="field"><label>Location</label>
+    <div id="rep-loc" style="padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface2);font-size:13px;color:var(--muted)">Waiting for GPS…</div>
+    <button class="btn s" id="rep-locate" style="margin-top:8px">Retry GPS</button></div>
+  <div class="field"><label for="rep-notes">Comment</label><textarea id="rep-notes" placeholder="e.g. near bus stop, water logging, large pit"></textarea></div>
+  <div class="field"><label for="rep-depth">Estimated depth (mm)</label><input id="rep-depth" type="number" inputmode="numeric" min="1" value="40"></div>
+  <div class="actions"><button class="btn" id="rep-cancel">Cancel</button><button class="btn p" id="rep-submit">Submit complaint</button></div>
+</div></div>
+<div class="toasts" id="toasts"></div>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(msg, type='info', ms=3000){ const el = document.createElement('div'); el.className='toast '+type; el.textContent=msg; $('toasts').appendChild(el); setTimeout(()=>el.remove(), ms); }
+const fmtTime = i => { if(!i) return '—'; try{return new Date(i).toLocaleTimeString()}catch{return i} };
+const fmtDate = i => { if(!i) return '—'; try{return new Date(i).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}catch{return i} };
+const formatINR = n => '₹' + Number(n||0).toLocaleString('en-IN');
+const prio = s => s>=75?'CRITICAL':s>=50?'HIGH':s>=25?'MODERATE':'LOW';
+const statusLabel = s => ({new:'New',assigned:'Assigned',in_progress:'In progress',awaiting_verification:'Awaiting verification',resolved:'Fixed',reopened:'Reopened'}[s]||'Unknown');
+const RATES = {base:500, d:2, r:50, m:{LOW:.8,MODERATE:1,HIGH:1.5,CRITICAL:2}};
+const estimateCost = (d,r,p) => Math.round((RATES.base + RATES.d*(d||0) + RATES.r*(r||0)) * (RATES.m[p]||1));
+const PERUNGUDI = {lat:12.96095, lon:80.24094};
+const USERS = { admin:{password:'admin123',role:'admin',label:'Administrator'}, public:{password:'public123',role:'public',label:'Citizen'}, contractor:{password:'contract123',role:'contractor',label:'Contractor'} };
+const state = { user:null, filter:'all', data:[], fitted:false, selected:null };
+const loadSession = () => { try { return JSON.parse(sessionStorage.getItem('roadpulse_user')); } catch { return null; } };
+function showLogin(){ stopLivePoll(); $('login-view').classList.add('on'); ['dashboard-view','top-r','tabbar'].forEach(i=>$(i).classList.add('hidden')); $('report-fab').classList.remove('on'); }
+function showDashboard(){ $('login-view').classList.remove('on'); ['dashboard-view','top-r','tabbar'].forEach(i=>$(i).classList.remove('hidden')); $('role-chip').textContent = state.user.label; $('report-fab').classList.toggle('on', state.user.role==='public'); const T = { admin:['Municipality dashboard','Perungudi road maintenance and pothole verification workflow.','All complaints'], contractor:['Contractor portal','Assigned repair jobs. Accept, repair, upload proof, and complete work.','Work orders'], public:['Citizen dashboard','See local reports, road condition, and fixed repairs in your area.','Recent reports'] }[state.user.role]; $('page-title').textContent=T[0]; $('page-sub').textContent=T[1]; $('queue-title').textContent=T[2]; initMap(); setTab(document.body.dataset.tab || 'overview'); refresh(); startLivePoll(); }
+$('login-submit').onclick = () => { const u = $('login-user').value.trim(), p = $('login-pass').value, r = $('login-role').value, err = $('login-err'); err.textContent=''; const a = USERS[u]; if(!a || a.password!==p){ err.textContent='Wrong username or password.'; return; } if(a.role!==r){ err.textContent=`This account signs in as "${a.label}". Change "Sign in as".`; return; } state.user={username:u, role:a.role, label:a.label}; sessionStorage.setItem('roadpulse_user', JSON.stringify(state.user)); showDashboard(); };
+$('login-pass').addEventListener('keydown', e => e.key==='Enter' && $('login-submit').click());
+$('login-user').addEventListener('keydown', e => e.key==='Enter' && $('login-pass').focus());
+$('logout-btn').onclick = () => { sessionStorage.removeItem('roadpulse_user'); state.user=null; showLogin(); };
+function setTab(t){ document.body.dataset.tab = t; document.querySelectorAll('#tabbar button').forEach(b => b.classList.toggle('on', b.dataset.tab===t)); if(t==='map') fixMapSize(); window.scrollTo({top:0}); }
+document.querySelectorAll('#tabbar button').forEach(b => b.onclick = () => setTab(b.dataset.tab));
+let map = null, layer = null, heatmapLayer = null, roadLayer = null, markerById = {}, meMarker = null;
+function initMap(){ if(map){ fixMapSize(); return; } map = L.map('map',{zoomControl:true,tap:true}).setView([PERUNGUDI.lat, PERUNGUDI.lon], 14); L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{attribution:'&copy; OpenStreetMap &copy; CARTO',subdomains:'abcd',maxZoom:19}).addTo(map); layer = L.layerGroup().addTo(map); heatmapLayer = L.layerGroup().addTo(map); roadLayer = L.layerGroup().addTo(map); new ResizeObserver(() => map.invalidateSize()).observe($('map')); setTimeout(fixMapSize, 50); }
+function fixMapSize(){ if(!map) return; [0,120,400].forEach(ms => setTimeout(() => map.invalidateSize(), ms)); }
+const sevColor = s => s>=75?'#b91c1c':s>=50?'#c2410c':s>=25?'#b45309':'#15803d';
+const visible = () => state.filter==='all' ? state.data : state.data.filter(d => (d.priority||prio(d.severity))===state.filter);
+function renderHeatmap(){ if(!map || !heatmapLayer) return; heatmapLayer.clearLayers(); fetch('/api/heatmap',{cache:'no-store'}).then(r=>r.ok?r.json():[]).then(rows => { if(!Array.isArray(rows)) return; rows.forEach(item => { const circle = L.circleMarker([item.lat,item.lon], {radius: 10 + (item.intensity || 0) * 18, color: item.severity >= 75 ? '#b91c1c' : item.severity >= 50 ? '#c2410c' : '#b45309', weight:1, fillColor: item.severity >= 75 ? '#b91c1c' : item.severity >= 50 ? '#c2410c' : '#b45309', fillOpacity: 0.2 + (item.intensity || 0) * 0.55 }); circle.addTo(heatmapLayer); circle.bindPopup(`<div style="font-size:12px;min-width:180px"><b>${item.severity || 0}</b> severity<br>duplicate count: ${item.duplicate_count || 1}</div>`); }); }).catch(()=>{}); }
+function renderRoadSegments(){ if(!map || !roadLayer) return; roadLayer.clearLayers(); const pts = visible().filter(d => Number.isFinite(+d.lat) && Number.isFinite(+d.lon)); const groups = new Map(); pts.forEach(d => { const key = `${Math.round(Number(d.lat) * 1000)}-${Math.round(Number(d.lon) * 1000)}`; if(!groups.has(key)) groups.set(key, []); groups.get(key).push(d); }); groups.forEach(list => { if(list.length >= 2){ const avgLat = list.reduce((a,b)=>a+Number(b.lat),0)/list.length; const avgLon = list.reduce((a,b)=>a+Number(b.lon),0)/list.length; const marker = L.marker([avgLat, avgLon], {icon: L.divIcon({html:'<div style="font-size:16px;line-height:20px;text-align:center;">✕</div>', className:'road-segment-x', iconSize:[18,18], iconAnchor:[9,9]})}); marker.addTo(roadLayer); marker.bindPopup(`<div style="font-size:12px"><b>Uneven road segment</b><br>${list.length} potholes in this road segment</div>`); } }); }
+function renderMap(fit){ if(!map) return; layer.clearLayers(); markerById = {}; const pts = visible().filter(d => Number.isFinite(+d.lat) && Number.isFinite(+d.lon) && (+d.lat||+d.lon)); pts.forEach(d => { const p = d.priority || prio(d.severity), dup = d.duplicate_count||1; const cost = d.estimated_cost || estimateCost(d.depth_mm,d.radius_cm,p); const m = L.circleMarker([+d.lat,+d.lon], {radius: 8 + Math.min(dup,5), color:'#fff', weight:2, fillColor:sevColor(d.severity), fillOpacity:.92}).addTo(layer); m.bindPopup(`<div style="font-size:13px;min-width:190px"><b style="color:${sevColor(d.severity)}">${p}</b> · Severity ${esc(d.severity)}<br>Depth ${esc(d.depth_mm||0)} mm · Radius ${esc(d.radius_cm||0)} cm<br>${dup>1?`<span style="color:#6d28d9">${dup}× reported here</span><br>`:''}<b style="color:#15803d">Est. ${formatINR(cost)}</b>${d.full_frame?`<img src="${esc(d.full_frame)}" style="width:100%;max-width:220px;margin-top:8px;border-radius:6px">`:''}</div>`, {maxWidth:240}); m.on('click', () => selectCard(d.id)); markerById[d.id] = m; }); $('map-count').textContent = `${pts.length} marker${pts.length===1?'':'s'}`; if(fit && pts.length) fitAll(pts); renderRoadSegments(); renderHeatmap(); }
+function fitAll(pts){ pts = pts || visible().filter(d => +d.lat || +d.lon); if(!pts.length || !map) return; map.invalidateSize(); map.fitBounds(L.latLngBounds(pts.map(d => [+d.lat,+d.lon])).pad(.2), {maxZoom:16}); }
+$('map-fit').onclick = () => fitAll();
+$('map-me').onclick = () => { if(!navigator.geolocation) return toast('Location is not supported on this device.','warn'); navigator.geolocation.getCurrentPosition(pos => { const ll = [pos.coords.latitude, pos.coords.longitude]; if(meMarker) map.removeLayer(meMarker); meMarker = L.circleMarker(ll,{radius:8,color:'#fff',weight:3,fillColor:'#1665c1',fillOpacity:1}).addTo(map).bindPopup('You are here'); map.setView(ll,16); }, () => toast('Could not get your location. Allow location access and retry.','warn'), {enableHighAccuracy:true, timeout:10000}); };
+function showOnMap(id){ const m = markerById[id]; if(!m) return toast('This report has no GPS location.','warn'); if(window.matchMedia('(max-width:760px)').matches) setTab('map'); setTimeout(() => { map.invalidateSize(); map.setView(m.getLatLng(), Math.max(map.getZoom(),16), {animate:true}); m.openPopup(); }, 200); }
+function selectCard(id){ state.selected = id; document.querySelectorAll('.event').forEach(e => e.classList.toggle('sel', e.dataset.id==id)); const el = document.querySelector(`.event[data-id="${CSS.escape(String(id))}"]`); if(el && window.innerWidth>1000) el.scrollIntoView({block:'nearest', behavior:'smooth'}); }
+function renderEvents(){ const list = visible(), c = $('events'), role = state.user.role; if(!list.length){ c.innerHTML = '<div class="empty">No reports match this filter yet.</div>'; return; } c.innerHTML = list.map(d => { const p = d.priority || prio(d.severity), st = d.status||'new', dup = d.duplicate_count||1; const cost = d.estimated_cost || estimateCost(d.depth_mm,d.radius_cm,p); const id = esc(d.id); let acts = ''; if(role==='public') acts = `<button class="btn s" data-a="upvote" data-id="${id}">Also affects me (${dup})</button>`; else if(role==='contractor') acts = `<button class="btn s p" data-a="start" data-id="${id}">Accept work</button><button class="btn s" data-a="resolve" data-id="${id}">Mark fixed</button>`; else acts = `<button class="btn s" data-a="assign" data-id="${id}">Assign</button><button class="btn s" data-a="verify" data-id="${id}">Verify completion</button>`; acts += `<button class="btn s" data-a="map" data-id="${id}">Show on map</button>`; const dist = d.depth_cm!=null ? `${Number(d.depth_cm).toFixed(1)} cm` : `${d.depth_mm||0} mm`; return `<div class="event${state.selected==d.id?' sel':''}" data-id="${id}"><div class="media">${d.image?`<img class="crop" src="${esc(d.image)}" data-open="${esc(d.image)}" alt="Damage close-up" loading="lazy">`:''}${d.full_frame?`<img class="full" src="${esc(d.full_frame)}" data-open="${esc(d.full_frame)}" alt="Full frame" loading="lazy">`:''}</div><div class="eb"><div class="pills"><span class="pill sev-${p}">${p}</span>${dup>1?`<span class="pill dup">${dup}× reported</span>`:''}<span class="pill cost">${formatINR(cost)}</span><span class="pill st">${statusLabel(st)}</span></div><div class="meta"><div><b>Distance</b> ${dist}</div><div><b>Radius</b> ${d.radius_cm||0} cm</div><div><b>Confidence</b> ${(d.confidence||0).toFixed(2)}</div><div><b>Time</b> ${fmtDate(d.timestamp)}</div><div><b>GPS</b> ${d.lat?(+d.lat).toFixed(5):'—'}, ${d.lon?(+d.lon).toFixed(5):'—'}</div><div><b>Device</b> ${esc(d.device_id||'—')}</div>${d.accel_z!=null?`<div><b>Accel Z</b> ${Number(d.accel_z).toFixed(2)} g</div>`:''}</div><div class="acts">${acts}</div></div></div>`; }).join(''); }
+$('events').addEventListener('click', e => { const img = e.target.closest('[data-open]'); if(img) return window.open(img.dataset.open,'_blank'); const b = e.target.closest('[data-a]'); if(b){ if(b.dataset.a==='map') return showOnMap(b.dataset.id); handleAction(b.dataset.a, b.dataset.id); return; } const card = e.target.closest('.event'); if(card){ selectCard(card.dataset.id); const m = markerById[card.dataset.id]; if(m && window.innerWidth>1000){ map.panTo(m.getLatLng()); m.openPopup(); } } });
+async function handleAction(a, id){ if(a==='upvote'){ fetch(`/api/detections/${id}/upvote`, {method:'POST'}).then(r=>r.json()).then(()=>{ toast('Report count updated','success'); refresh(); }).catch(()=>toast('Action failed. Try again.','error')); return; } if(a==='assign'){ fetch(`/api/tickets/${id}/assign`, {method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({contractor_id: 1})}).then(()=>{ toast('Assigned to contractor','success'); refresh(); }).catch(()=>toast('Assignment failed.','error')); return; } if(a==='start'){ fetch(`/api/repairs/${id}/start`, {method:'POST', headers:{'Content-Type':'application/json', 'Authorization': `Bearer ${sessionStorage.getItem('roadpulse_token') || ''}`}, body: JSON.stringify({before_image_b64:''})}).then(()=>{ toast('Work started','success'); refresh(); }).catch(()=>toast('Start failed.','error')); return; } if(a==='resolve'){ fetch(`/api/repairs/${id}/complete`, {method:'POST', headers:{'Content-Type':'application/json', 'Authorization': `Bearer ${sessionStorage.getItem('roadpulse_token') || ''}`}, body: JSON.stringify({after_image_b64:'', notes:'Repair completed'})}).then(()=>{ toast('Repair proof uploaded','success'); refresh(); }).catch(()=>toast('Completion failed.','error')); return; } if(a==='verify'){ fetch(`/api/repairs/${id}/verify`, {method:'POST', headers:{'Content-Type':'application/json', 'Authorization': `Bearer ${sessionStorage.getItem('roadpulse_token') || ''}`}, body: JSON.stringify({verified: true})}).then(()=>{ toast('Municipality verified','success'); refresh(); }).catch(()=>toast('Verification failed.','error')); return; } }
+function renderStats(s, list){ const bp = s.by_priority||{}, bs = s.by_status||{}; $('count').textContent = s.total||list.length||0; $('stat-total').textContent = s.total||list.length||0; $('stat-critical').textContent = s.critical_24h || bp.CRITICAL || 0; $('stat-severity').textContent = Number(s.avg_severity||0).toFixed(1); $('stat-open').textContent = (bs.new||0)+(bs.assigned||0)+(bs.in_progress||0)+(bs.awaiting_verification||0); let tc = s.total_estimated_cost||0; if(!tc) tc = list.reduce((a,d) => a + (d.estimated_cost || estimateCost(d.depth_mm,d.radius_cm,d.priority||prio(d.severity))), 0); $('stat-cost').textContent = formatINR(tc); $('queue-label').textContent = `${bp.CRITICAL||0} critical · ${bp.HIGH||0} high`; }
+function refresh(){ if(!state.user) return; Promise.all([fetch('/api/detections?limit=200').then(r=>r.json()), fetch('/api/stats').then(r=>r.ok?r.json():{})]).then(([det, stats]) => { state.data = Array.isArray(det) ? det : []; renderStats(stats, state.data); renderEvents(); renderMap(!state.fitted); if(state.data.length) state.fitted = true; }).catch(e => { console.error(e); toast('Could not load data. Check the connection.','error'); }); }
+$('filters').addEventListener('click', e => { const b = e.target.closest('.fb'); if(!b) return; document.querySelectorAll('.fb').forEach(x => x.classList.remove('on')); b.classList.add('on'); state.filter = b.dataset.filter; renderEvents(); renderMap(true); });
+let liveId = null;
+async function pollLive(){ try{ const r = await fetch('/api/live',{cache:'no-store'}); if(!r.ok) return; const d = await r.json(); if(d.image_b64 && d.image_b64.length>50) $('live-img').src = d.image_b64; $('live-device-badge').textContent = d.device_id||'device'; $('live-updated').textContent = fmtTime(d.timestamp); $('live-fps').textContent = Number(d.fps||0).toFixed(1); $('live-depth').textContent = d.depth_cm!=null ? `${Number(d.depth_cm).toFixed(1)} cm` : '0.0 cm'; $('live-accel').textContent = `${(d.accel_x||0).toFixed(2)} · ${(d.accel_y||0).toFixed(2)} · ${(d.accel_z||0).toFixed(2)}`; const t = d.detections, card = $('live-top-card'); card.className = 'sc'; if(t && t.count>0){ $('live-top').textContent = `${t.top_priority} · sev ${t.top_severity}`; $('live-top-sub').textContent = `${t.count} box(es) · conf ${Number(t.top_confidence).toFixed(2)}`; card.classList.add({CRITICAL:'red',HIGH:'orange',MODERATE:'amber',LOW:'green'}[t.top_priority]||'green'); } else { $('live-top').textContent='—'; $('live-top-sub').textContent='No detections in frame'; } const fresh = d.timestamp && (Date.now()-new Date(d.timestamp).getTime()) < 15000; $('live-dot').className = $('live-badge-dot').className = 'dot '+(fresh?'live':'stale'); $('live-badge-text').textContent = fresh?'LIVE':'STALE'; $('live-status').textContent = fresh?'live':'stale'; }catch{} }
+function startLivePoll(){ stopLivePoll(); pollLive(); liveId = setInterval(pollLive, 1500); }
+function stopLivePoll(){ if(liveId){ clearInterval(liveId); liveId=null; } }
+document.addEventListener('visibilitychange', () => { if(!state.user) return; document.hidden ? stopLivePoll() : startLivePoll(); });
+const modal = $('report-modal'); let gps = {lat:null, lon:null, acc:null}, photoB64 = null; $('report-fab').onclick = () => { modal.classList.add('on'); requestGPS(); }; $('rep-cancel').onclick = () => modal.classList.remove('on'); modal.addEventListener('click', e => { if(e.target===modal) modal.classList.remove('on'); }); $('rep-locate').onclick = requestGPS; function requestGPS(){ const el = $('rep-loc'); if(!navigator.geolocation){ el.textContent='Location is not supported on this device.'; return; } el.textContent='Getting your location…'; navigator.geolocation.getCurrentPosition(p => { gps = {lat:p.coords.latitude, lon:p.coords.longitude, acc:Math.round(p.coords.accuracy)}; el.innerHTML = `<b style="color:var(--text)">${gps.lat.toFixed(6)}, ${gps.lon.toFixed(6)}</b><br>Accuracy ±${gps.acc} m`; }, err => { el.textContent = err.code===1 ? 'Permission denied. Allow location access in browser settings.' : err.code===2 ? 'Position unavailable. Try outdoors.' : 'Timed out. Tap Retry GPS.'; }, {enableHighAccuracy:true, timeout:15000, maximumAge:30000}); } $('rep-photo').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if(!f) return; const rd = new FileReader(); rd.onload = ev => { const img = new Image(); img.onload = () => { let w=img.width, h=img.height; const M=1024; if(Math.max(w,h)>M){ const s=M/Math.max(w,h); w=Math.round(w*s); h=Math.round(h*s); } const cv = document.createElement('canvas'); cv.width=w; cv.height=h; cv.getContext('2d').drawImage(img,0,0,w,h); const url = cv.toDataURL('image/jpeg',.9); photoB64 = url.split(',')[1]; $('rep-preview').innerHTML = `<img src="${url}" style="max-width:100%;max-height:220px;border-radius:8px" alt="Photo preview">`; }; img.src = ev.target.result; }; rd.readAsDataURL(f); }); $('rep-submit').onclick = () => { if(!photoB64) return toast('Add a photo of the damage first.','warn'); if(gps.lat===null) return toast('Waiting for GPS. Tap Retry GPS.','warn'); fetch('/api/public/report', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ image_b64: photoB64, lat: gps.lat, lon: gps.lon, depth_mm: parseFloat($('rep-depth').value) || 40, radius_cm:20, notes: $('rep-notes').value.trim(), reporter: state.user.username, device_id: 'public-web', timestamp: new Date().toISOString() })}).then(r=>r.json()).then(res => { if(res.status!=='ok') return toast('Complaint failed: '+(res.error||'unknown error'),'error'); modal.classList.remove('on'); $('rep-photo').value=''; $('rep-notes').value=''; $('rep-preview').textContent='No photo yet'; photoB64=null; gps={lat:null,lon:null,acc:null}; $('rep-loc').textContent='Waiting for GPS…'; toast(res.duplicate_count > 1 ? `Merged issue created — now ${res.duplicate_count}× reported` : `Complaint registered — Ticket ${res.ticket_number || '#' + res.id}`, 'success', 4000); refresh(); }).catch(() => toast('Submission failed. Check your connection.','error')); };
+(function(){ const s = loadSession(); if(s){ state.user=s; showDashboard(); } else { showLogin(); } })();
+</script>
+</body>
+</html>
